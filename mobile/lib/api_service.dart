@@ -34,6 +34,14 @@ class ApiService {
     throw ApiException('Bilgileri kontrol edin (hata ${r.statusCode}).');
   }
 
+  static Future<Map<String, String>> _authHeaders() async {
+    final token = await readToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
   static Future<http.Response> _post(String path, Map<String, dynamic> body) {
     return http
         .post(
@@ -79,5 +87,23 @@ class ApiService {
       return null;
     }
     return _parse(r);
+  }
+
+  static Future<Map<String, dynamic>> verifyEmail(String code) async {
+    final r = await http
+        .post(
+      Uri.parse('$apiBaseUrl/verify-email'),
+      headers: await _authHeaders(),
+      body: jsonEncode({'code': code}),
+    )
+        .timeout(_timeout);
+    return _parse(r);
+  }
+
+  static Future<String> resendCode() async {
+    final r = await http
+        .post(Uri.parse('$apiBaseUrl/resend-code'), headers: await _authHeaders())
+        .timeout(_timeout);
+    return _parse(r)['message'] as String;
   }
 }

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/preferences_screen.dart';
+import 'screens/verify_email_screen.dart';
 
-/// Alerjen ve beslenme tercihini henüz girmediyse önce tercihler ekranına gider.
-Widget homeForUser(Map<String, dynamic> user) =>
-    user['preferences_completed'] == true
-        ? HomeScreen(user: user)
-        : PreferencesScreen(user: user);
+/// Önce e-posta doğrulaması, sonra tercihler, en son ana sayfa.
+Widget homeForUser(Map<String, dynamic> user) {
+  if (user['email_verified'] != true) return VerifyEmailScreen(user: user);
+  if (user['preferences_completed'] != true) return PreferencesScreen(user: user);
+  return HomeScreen(user: user);
+}
