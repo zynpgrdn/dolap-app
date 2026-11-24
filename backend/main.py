@@ -28,6 +28,12 @@ CODE_EXPIRE_MINUTES = 10
 MAX_CODE_ATTEMPTS = 5
 RESEND_WAIT_SECONDS = 60
 
+ALLERGENS = {
+    "gluten", "lactose", "egg", "fish", "shellfish", "peanut",
+    "almond", "hazelnut", "walnut", "sesame", "soy",
+}
+DIETS = {"none", "vegetarian", "vegan"}
+
 db = MongoClient(MONGO_URI, tz_aware=True)[DB_NAME]
 users = db["users"]
 users.create_index("email", unique=True)
@@ -52,6 +58,10 @@ class LoginRequest(BaseModel):
 class VerifyRequest(BaseModel):
     code: str = Field(min_length=6, max_length=6)
 
+
+class PreferencesRequest(BaseModel):
+    allergens: list[str] = []
+    diet: str = "none"
 
 # ---------- Helpers ----------
 def create_token(user_id: str) -> str:
@@ -204,3 +214,23 @@ def resend_code(background_tasks: BackgroundTasks, user: dict = Depends(current_
     users.update_one({"_id": user["_id"]}, {"$set": {"verification": verification}})
     background_tasks.add_task(send_verification_email, user["email"], user["first_name"], code)
     return {"message": "Yeni kod gönderildi."}
+
+
+
+@app.put("/me/preferences")
+def update_preferences(req: PreferencesRequest, user: dict = Depends(current_user)):
+    if not user.get("email_verified"):
+        raise HTTPException(403, "Önce e-posta adresini doğrulamalısın.")
+    unknown = set(req.allergens) - ALLERGENS
+    if unknown:
+        raise HTTPException(400, f"Bilinmeyen alerjen: {', '.join(sorted(unknown))}")
+    if req.diet not in DIETS:
+        raise HTTPException(400, "Geçersiz beslenme tercihi.")
+    changes = {
+        "allergens": sorted(set(req.allergens)),
+        "diet": req.diet,
+        "preferences_completed": True,
+    }
+    users.update_one({"_id": user["_id"]}, {"$set": changes})
+    user.update(changes)
+    return user_to_json(user)
