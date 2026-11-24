@@ -12,7 +12,7 @@ class DolapApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Dolap',
+      title: 'DolApp',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
       home: const StartupScreen(),

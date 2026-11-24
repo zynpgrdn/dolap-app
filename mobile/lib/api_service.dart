@@ -106,4 +106,18 @@ class ApiService {
         .timeout(_timeout);
     return _parse(r)['message'] as String;
   }
+
+  static Future<Map<String, dynamic>> updatePreferences({
+    required List<String> allergens,
+    required String diet,
+  }) async {
+    final r = await http
+        .put(
+      Uri.parse('$apiBaseUrl/me/preferences'),
+      headers: await _authHeaders(),
+      body: jsonEncode({'allergens': allergens, 'diet': diet}),
+    )
+        .timeout(_timeout);
+    return _parse(r);
+  }
 }
