@@ -33,6 +33,14 @@ ALIASES = {
     "un": "buğday unu",
     "sızma zeytinyağı": "zeytinyağı",
     "küncü": "susam",
+    "pulbiber": "pul biber",
+    "çörekotu": "çörek otu",
+    "limonun suyu": "limon suyu",
+    "zeytinyağ": "zeytinyağı",
+    "maydonoz": "maydanoz",
+    "kaya tuzu": "tuz",
+    "şişe maden suyu": "maden suyu",
+    "kornişon turşu": "kornişon turşusu",
 }
 
 # Miktar / ölçü / hazırlık sözcükleri (çok kelimeliler önce gelecek şekilde sıralanır)
@@ -53,6 +61,7 @@ _NOISE = [
     "er", "ar", "şer", "şar", "birer", "ikişer", "üçer", "dörder", "beşer", "yarımşar",
     "parça", "parçası", "parçaları", "şeklinde", "naturel", "natürel",
     "yağlı", "yağsız", "tam yağlı", "az yağlı", "light", "tercihen", "opsiyonel",
+    "kontrollü ekleyin", "kontrollü", "ekleyin", "şart değil", "oda ısısında", "yumuşak",
 ]
 _NOISE_RE = re.compile(
     r"(?<!\w)(" + "|".join(re.escape(w) for w in sorted(_NOISE, key=len, reverse=True)) + r")(?!\w)"

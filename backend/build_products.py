@@ -50,10 +50,10 @@ CATEGORY_KEYWORDS = {
                  "sucuk", "pastırma", "salam", "sosis", "et suyu"],
     "seafood": ["balık", "somon", "hamsi", "levrek", "çipura", "karides", "midye", "kalamar",
                 "ahtapot", "ton balığı", "uskumru", "palamut", "alabalık", "istavrit"],
-    "cheese": ["peynir", "peyniri", "kaşar", "lor", "mozzarella", "parmesan", "cheddar", "labne"],
+    "cheese": ["peynir", "peyniri", "kaşar", "lor", "mozzarella", "parmesan", "cheddar", "labne",
+               "mascarpone"],
     "dairy": ["süt", "yoğurt", "tereyağı", "krema", "kaymak", "ayran", "süt tozu", "süzme yoğurt"],
-    "breakfast": ["yumurta", "zeytin", "bal", "reçel", "pekmez", "çikolata kreması"],
-    "greens": ["maydanoz", "dereotu", "roka", "marul", "nane", "taze nane", "yeşil soğan",
+    "breakfast": ["yumurta", "zeytin", "bal", "reçel", "pekmez", "çikolata kreması", "kahve"],    "greens": ["maydanoz", "dereotu", "roka", "marul", "nane", "taze nane", "yeşil soğan",
                "fesleğen", "reyhan", "tere", "semizotu", "kişniş"],
     "vegetables": ["soğan", "sarımsak", "domates", "biber", "patates", "havuç", "patlıcan",
                    "kabak", "bal kabağı", "mantar", "salatalık", "ıspanak", "pırasa", "lahana",
@@ -61,25 +61,24 @@ CATEGORY_KEYWORDS = {
                    "kereviz", "turp", "pancar", "mısır", "enginar", "kapya biber", "salatalık turşusu"],
     "fruits": ["limon", "elma", "muz", "portakal", "çilek", "armut", "üzüm", "nar", "ayva",
                "kivi", "ananas", "şeftali", "kiraz", "vişne", "kayısı", "mandalina", "avokado",
-               "limon suyu", "portakal suyu", "limon kabuğu"],
-    "grains": ["un", "buğday unu", "pirinç", "bulgur", "makarna", "şehriye", "irmik", "mercimek",
+               "limon suyu", "portakal suyu", "limon kabuğu", "hurma", "yaban mersini"],
+        "grains": ["un", "buğday unu", "pirinç", "bulgur", "makarna", "şehriye", "irmik", "mercimek",
                "nohut", "kuru fasulye", "barbunya", "yulaf", "nişasta", "mısır unu", "galeta unu",
-               "erişte", "kuskus", "kinoa", "mısır nişastası", "pirinç unu"],
+               "erişte", "kuskus", "kinoa", "mısır nişastası", "pirinç unu", "buğday"],
     "bakery": ["ekmek", "yufka", "lavaş", "bazlama", "milföy", "pide", "tortilla", "ekmek içi",
                "baklava yufkası", "kadayıf", "kuru ekmek"],
     "nuts": ["ceviz", "badem", "fındık", "fıstık", "yer fıstığı", "antep fıstığı", "susam",
-             "kaju", "kuru üzüm", "kuru kayısı", "hindistan cevizi", "çam fıstığı", "kuru incir"],
+             "kaju", "kuru üzüm", "kuru kayısı", "hindistan cevizi", "çam fıstığı", "kuru incir",
+             "kuş üzümü", "tohumu", "keten tohumu", "chia tohumu", "haşhaş"],
     "oils": ["yağ", "yağı", "sıvı yağ", "zeytinyağı", "zeytin yağı", "margarin"],
     "spices": ["karabiber", "pul biber", "toz biber", "kimyon", "kekik", "kuru nane", "tarçın",
                "zerdeçal", "sumak", "yenibahar", "karanfil", "zencefil", "köri", "isot", "defne",
-               "defne yaprağı", "muskat", "çörek otu", "baharat"],
-    "sauces": ["salça", "salçası", "domates salçası", "biber salçası", "ketçap", "mayonez",
+               "defne yaprağı", "muskat", "çörek otu", "baharat", "vegeta", "sebze tozu"],    "sauces": ["salça", "salçası", "domates salçası", "biber salçası", "ketçap", "mayonez",
                "hardal", "sirke", "nar ekşisi", "soya sosu", "sos", "sosu", "tahin",
                "domates püresi", "bulyon"],
     "baking": ["şeker", "toz şeker", "pudra şekeri", "esmer şeker", "kabartma tozu", "vanilin",
                "kakao", "maya", "kuru maya", "yaş maya", "çikolata", "bitter çikolata",
-               "jelatin", "karbonat", "bisküvi", "kek", "krem şanti"],
-    "basics": ["tuz", "su"],
+               "jelatin", "karbonat", "bisküvi", "kek", "krem şanti", "vanilya şekeri"],    "basics": ["tuz", "su"],
 }
 
 # Ürün adında geçen kelime -> alerjen / hayvansal (kategoriden gelenlere eklenir)
@@ -125,8 +124,8 @@ OVERRIDES = {
     "ton balığı": {"shelf_life_days": 2, "storage": "packaged"},
 }
 # Ürün olmasını istemediğiniz adlar (rapora bakıp ekleyin)
-IGNORE = {"malzemeler", "hamuru", "sosu", "üzeri", "süslemek", "servis", "isteğe", "tarif"}
-
+IGNORE = {"malzemeler", "hamuru", "sosu", "üzeri", "süslemek", "servis", "isteğe", "tarif",
+          "glutensiz"}
 
 def _has(name: str, kw: str) -> bool:
     return re.search(rf"(?<!\w){re.escape(kw)}(?!\w)", name) is not None
