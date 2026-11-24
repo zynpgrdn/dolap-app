@@ -3,7 +3,7 @@ import hmac
 import os
 import secrets
 import smtplib
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
 
 import bcrypt
@@ -258,4 +258,138 @@ def catalog():
             }
             for p in items
         ],
+    }
+
+
+# ---------- Dolap ----------
+
+pantry = db["pantry"]
+pantry.create_index([("user_id", 1), ("expires_at", 1)])
+
+TR_TZ = timezone(timedelta(hours=3))   # Türkiye saati
+EXPIRING_SOON_DAYS = 2                  # bu kadar gün veya daha az kaldıysa uyarı
+
+
+class PantryAddRequest(BaseModel):
+    product_id: str
+    purchased_at: date | None = None    # boş bırakılırsa bugün
+    opened: bool = False                # paketli ürün zaten açıksa True
+
+
+def today() -> date:
+    return datetime.now(TR_TZ).date()
+
+
+def to_dt(d: date) -> datetime:
+    return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+
+
+def pantry_item_to_json(item: dict, product: dict | None) -> dict:
+    expires = item.get("expires_at")
+    days_left = (expires.date() - today()).days if expires else None
+    return {
+        "id": str(item["_id"]),
+        "product_id": item["product_id"],
+        "name": product["name"] if product else item["product_id"],
+        "category": product["category"] if product else None,
+        "storage": item["storage"],
+        "purchased_at": item["purchased_at"].date().isoformat(),
+        "opened": item["opened"],
+        "opened_at": item["opened_at"].date().isoformat() if item.get("opened_at") else None,
+        "expires_at": expires.date().isoformat() if expires else None,
+        "days_left": days_left,
+        "expired": days_left is not None and days_left < 0,
+        "expiring_soon": days_left is not None and 0 <= days_left <= EXPIRING_SOON_DAYS,
+    }
+
+
+def user_pantry(user: dict) -> list[dict]:
+    items = list(pantry.find({"user_id": user["_id"]}))
+    prods = {p["_id"]: p for p in products.find({"_id": {"$in": [i["product_id"] for i in items]}})}
+    result = [pantry_item_to_json(i, prods.get(i["product_id"])) for i in items]
+    # SKT'si en yakın olan en üstte, SKT'si başlamamış (açılmamış paketli) olanlar en altta
+    result.sort(key=lambda x: (x["days_left"] is None, x["days_left"] or 0, x["name"]))
+    return result
+
+
+def find_own_item(item_id: str, user: dict) -> dict:
+    try:
+        item = pantry.find_one({"_id": ObjectId(item_id), "user_id": user["_id"]})
+    except Exception:
+        item = None
+    if not item:
+        raise HTTPException(status_code=404, detail="Ürün dolabında bulunamadı.")
+    return item
+
+
+@app.get("/pantry")
+def get_pantry(user: dict = Depends(current_user)):
+    return user_pantry(user)
+
+
+@app.post("/pantry", status_code=201)
+def add_to_pantry(body: PantryAddRequest, user: dict = Depends(current_user)):
+    product = products.find_one({"_id": body.product_id, "selectable": True})
+    if not product or product.get("always_available"):
+        raise HTTPException(status_code=404, detail="Ürün katalogda bulunamadı.")
+    purchased = body.purchased_at or today()
+    if purchased > today():
+        raise HTTPException(status_code=400, detail="Alış tarihi ileri bir tarih olamaz.")
+
+    days = product["shelf_life_days"]
+    item = {
+        "user_id": user["_id"],
+        "product_id": product["_id"],
+        "storage": product["storage"],
+        "purchased_at": to_dt(purchased),
+        "opened": False,
+        "opened_at": None,
+        "expires_at": None,
+        "added_at": datetime.now(timezone.utc),
+    }
+    if product["storage"] == "fresh":
+        # Taze ürün: SKT alış tarihinden başlar
+        item["expires_at"] = to_dt(purchased + timedelta(days=days))
+    elif body.opened:
+        # Paketli ama zaten açık: SKT bugünden başlar
+        item["opened"] = True
+        item["opened_at"] = to_dt(today())
+        item["expires_at"] = to_dt(today() + timedelta(days=days))
+
+    result = pantry.insert_one(item)
+    item["_id"] = result.inserted_id
+    return pantry_item_to_json(item, product)
+
+
+@app.post("/pantry/{item_id}/open")
+def open_item(item_id: str, user: dict = Depends(current_user)):
+    item = find_own_item(item_id, user)
+    if item["storage"] != "packaged":
+        raise HTTPException(status_code=400, detail="Taze ürünlerde 'Açıldı' kullanılmaz.")
+    if item["opened"]:
+        raise HTTPException(status_code=400, detail="Bu ürün zaten açılmış.")
+    product = products.find_one({"_id": item["product_id"]})
+    days = product["shelf_life_days"] if product else 7
+    update = {
+        "opened": True,
+        "opened_at": to_dt(today()),
+        "expires_at": to_dt(today() + timedelta(days=days)),
+    }
+    pantry.update_one({"_id": item["_id"]}, {"$set": update})
+    item.update(update)
+    return pantry_item_to_json(item, product)
+
+
+@app.delete("/pantry/{item_id}", status_code=204)
+def delete_item(item_id: str, user: dict = Depends(current_user)):
+    item = find_own_item(item_id, user)
+    pantry.delete_one({"_id": item["_id"]})
+
+
+@app.get("/alerts")
+def alerts(user: dict = Depends(current_user)):
+    items = user_pantry(user)
+    return {
+        "expired": [i for i in items if i["expired"]],
+        "expiring_soon": [i for i in items if i["expiring_soon"]],
     }
