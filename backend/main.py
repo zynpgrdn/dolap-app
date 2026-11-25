@@ -260,7 +260,6 @@ def catalog():
         ],
     }
 
-
 # ---------- Dolap ----------
 
 pantry = db["pantry"]
@@ -268,12 +267,15 @@ pantry.create_index([("user_id", 1), ("expires_at", 1)])
 
 TR_TZ = timezone(timedelta(hours=3))   # Türkiye saati
 EXPIRING_SOON_DAYS = 2                  # bu kadar gün veya daha az kaldıysa uyarı
+FREEZABLE_CATEGORIES = {"meat", "seafood"}   # dondurucuya konabilen kategoriler
+FROZEN_SHELF_LIFE_DAYS = 90                  # dondurucuda kaç gün dayanır
 
 
 class PantryAddRequest(BaseModel):
     product_id: str
     purchased_at: date | None = None    # boş bırakılırsa bugün
     opened: bool = False                # paketli ürün zaten açıksa True
+    frozen: bool = False                # et/balık dondurucuya konduysa True
 
 
 def today() -> date:
@@ -295,6 +297,7 @@ def pantry_item_to_json(item: dict, product: dict | None) -> dict:
         "storage": item["storage"],
         "purchased_at": item["purchased_at"].date().isoformat(),
         "opened": item["opened"],
+        "frozen": item.get("frozen", False),
         "opened_at": item["opened_at"].date().isoformat() if item.get("opened_at") else None,
         "expires_at": expires.date().isoformat() if expires else None,
         "days_left": days_left,
@@ -336,7 +339,10 @@ def add_to_pantry(body: PantryAddRequest, user: dict = Depends(current_user)):
     if purchased > today():
         raise HTTPException(status_code=400, detail="Alış tarihi ileri bir tarih olamaz.")
 
-    days = product["shelf_life_days"]
+    frozen = body.frozen
+    if frozen and product["category"] not in FREEZABLE_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Bu ürün dondurucuya eklenemez.")
+    days = FROZEN_SHELF_LIFE_DAYS if frozen else product["shelf_life_days"]
     item = {
         "user_id": user["_id"],
         "product_id": product["_id"],
@@ -344,6 +350,7 @@ def add_to_pantry(body: PantryAddRequest, user: dict = Depends(current_user)):
         "purchased_at": to_dt(purchased),
         "opened": False,
         "opened_at": None,
+        "frozen": frozen,
         "expires_at": None,
         "added_at": datetime.now(timezone.utc),
     }
@@ -375,6 +382,19 @@ def open_item(item_id: str, user: dict = Depends(current_user)):
         "opened_at": to_dt(today()),
         "expires_at": to_dt(today() + timedelta(days=days)),
     }
+    pantry.update_one({"_id": item["_id"]}, {"$set": update})
+    item.update(update)
+    return pantry_item_to_json(item, product)
+
+
+@app.post("/pantry/{item_id}/thaw")
+def thaw_item(item_id: str, user: dict = Depends(current_user)):
+    item = find_own_item(item_id, user)
+    if not item.get("frozen"):
+        raise HTTPException(status_code=400, detail="Bu ürün dondurucuda değil.")
+    product = products.find_one({"_id": item["product_id"]})
+    days = product["shelf_life_days"] if product else 2
+    update = {"frozen": False, "expires_at": to_dt(today() + timedelta(days=days))}
     pantry.update_one({"_id": item["_id"]}, {"$set": update})
     item.update(update)
     return pantry_item_to_json(item, product)

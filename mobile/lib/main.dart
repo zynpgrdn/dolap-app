@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'api_service.dart';
 import 'navigation.dart';
 import 'screens/login_screen.dart';
 
-void main() => runApp(const DolapApp());
+void main() => runApp(const DolApp());
 
-class DolapApp extends StatelessWidget {
-  const DolapApp({super.key});
+class DolApp extends StatelessWidget {
+  const DolApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +16,14 @@ class DolapApp extends StatelessWidget {
       title: 'DolApp',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
+      // Takvim, "İptal/Tamam" butonları vb. Türkçe olsun
+      locale: const Locale('tr', 'TR'),
+      supportedLocales: const [Locale('tr', 'TR')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const StartupScreen(),
     );
   }
@@ -32,10 +41,10 @@ class _StartupScreenState extends State<StartupScreen> {
   @override
   void initState() {
     super.initState();
-    _checkSession();
+    _check();
   }
 
-  Future<void> _checkSession() async {
+  Future<void> _check() async {
     Map<String, dynamic>? user;
     try {
       user = await ApiService.me();
