@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'api_service.dart';
 import 'navigation.dart';
 import 'screens/login_screen.dart';
+import 'theme.dart';
 
 void main() => runApp(const DolApp());
 
@@ -15,7 +16,7 @@ class DolApp extends StatelessWidget {
     return MaterialApp(
       title: 'DolApp',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
+      theme: AppTheme.light,
       // Takvim, "İptal/Tamam" butonları vb. Türkçe olsun
       locale: const Locale('tr', 'TR'),
       supportedLocales: const [Locale('tr', 'TR')],

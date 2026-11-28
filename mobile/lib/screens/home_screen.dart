@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../api_service.dart';
 import '../pantry_api.dart';
 import 'catalog_screen.dart';
-import 'login_screen.dart';
 import 'pantry_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
-  const HomeScreen({super.key, required this.user});
+  final void Function(int)? onGoToTab;
+  const HomeScreen({super.key, required this.user, this.onGoToTab});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -47,24 +47,12 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadAlerts();
   }
 
-  Future<void> _logout() async {
-    await ApiService.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (_) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('DolApp'),
-        actions: [
-          IconButton(tooltip: 'Çıkış yap', icon: const Icon(Icons.logout), onPressed: _logout),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadAlerts,
@@ -81,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _ActionTile(
                     icon: Icons.kitchen,
                     label: 'Dolabım',
-                    onTap: () => _open(const PantryScreen()),
+                    onTap: () => widget.onGoToTab != null
+                        ? widget.onGoToTab!(1)
+                        : _open(const PantryScreen()),
                   ),
                 ),
                 const SizedBox(width: 12),
